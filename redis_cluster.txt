@@ -1,31 +1,31 @@
-Redis������Ⱥ����
-�ͻ��˷�Ƭ��Client side partitioning��
-������Ƭ��Proxy assisted partitioning ��
-��ѯ·�ɣ�Query routing��
+﻿Redis常见集群技术
+客户端分片（Client side partitioning）
+代理分片（Proxy assisted partitioning ）
+查询路由（Query routing）
 Redis Cluster
 
-ʵ�ֻ���
+实现机制
 
 
-��ȱ��
-�ͻ��˷�Ƭ��Client side partitioning��
-�ŵ�
-û�е��㣬������ߣ���redisԭ�����ܣ�֧��redis�����������δ�أ�
-ȱ��
-������ά�ɱ�����֧�ֶ�̬�����ݣ�����/����redis�ڵ�ֻ������ϵͳ
-������ƬProxy assisted partitioning 
-�ŵ�
-ȱ��
-���ڵ����ܱ����͡����� Redis���ߵĲ��Խ�����ڴ��������£�Twemproxy�������൱������ֱͬ�Ӳ���Redis��ȣ����ֻ��20%��������ʧ��
-��ѯ·�ɣ�Query routing��
+优缺点
+客户端分片（Client side partitioning）
+优点
+没有单点，性能最高，即redis原生性能，支持redis的所有命令？（未必）
+缺点
+增加运维成本，不支持动态扩缩容，增加/减少redis节点只能重启系统
+代理分片Proxy assisted partitioning 
+优点
+缺点
+单节点性能被降低。根据 Redis作者的测试结果，在大多数情况下，Twemproxy的性能相当不错，同直接操作Redis相比，最多只有20%的性能损失。
+查询路由（Query routing）
 Redis Cluster
-�ŵ�
-ȱ��
+优点
+缺点
 
-��Ӧ�ó���
-�ͻ��˷�Ƭ
-С�ͼ�Ⱥ������Ӧ�ã�redis�ڵ�����10�����µġ�
-������Ƭ
+适应用场景
+客户端分片
+小型集群场景的应用，redis节点数在10个以下的。
+代理分片
 Redis Cluster
 
 
@@ -34,19 +34,19 @@ Redis Cluster
 
 Presharding
     
-����������Redis������֧�ֵ�ʵ����Redis 3.0.0 RC1�汾�������״�֧��Redis��Ⱥ��
-��Redis��Ⱥ������û����ʽ�Ƴ�֮ǰ��ͨ�������ķ�ʽ��ʵ�ִ洢��Ⱥ��������õ�ѡ����Twitter�Ƴ���Twemproxy��
-����Redis��Ⱥ���ܵ��������ƣ� �û���������ʹ�ô����ķ�ʽʵ��Redis��Ⱥ�������û����Ը��ӷ����ʹ��Redis�������Redis�洢��Ⱥ�����ܣ�
-����������Ӧ��ϵͳ�����ܡ�
+长期以来，Redis本身仅支持单实例。Redis 3.0.0 RC1版本发布，首次支持Redis集群。
+在Redis集群方案还没有正式推出之前，通过代理的方式来实现存储集群可能是最好的选择，如Twitter推出的Twemproxy。
+随着Redis集群功能的日益完善， 用户将无需再使用代理的方式实现Redis集群，这样用户可以更加方便地使用Redis，并提高Redis存储集群的性能，
+最终提高相关应用系统的性能。
 
 
-Ϊ�����������������������⣬����������ҵ�׷׳��֣�������ʽ����ʵ���˼�Ⱥ���ơ�����Щ�ǹٷ���Ⱥ��������У�
-�����ϰ����ݡ���Ƭ����sharding���洢�ڶ��Redisʵ����һ������£�ÿһ��Ƭ����һ��Redisʵ����
+为解决单机承载能力不足的问题，各大互联网企业纷纷出手，“自助式”地实现了集群机制。在这些非官方集群解决方案中，
+物理上把数据“分片”（sharding）存储在多个Redis实例，一般情况下，每一“片”是一个Redis实例。
 
-�����ٷ������Ƴ���Redis Cluster��Redis��Ⱥ������ʵ�ֻ��ƣ��ֱ�������£�ϣ���Դ��ѡ������������
+包括官方近期推出的Redis Cluster，Redis集群有三种实现机制，分别介绍如下，希望对大家选型有所帮助。
 
 
 
-�ο�����
-Redis 3.0.0 RC1�汾�������״�֧��Redis��Ⱥ
+参考文献
+Redis 3.0.0 RC1版本发布，首次支持Redis集群
 http://www.infoq.com/cn/news/2014/10/redis-3.0.0-rc1-release?utm_source=news_about_Redis&utm_medium=link&utm_campaign=Redis
