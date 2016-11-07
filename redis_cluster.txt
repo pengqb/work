@@ -1,7 +1,10 @@
 ﻿Redis常见集群技术
 客户端分片（Client side partitioning）
+客户端直接选择目标节点通信。
 代理分片（Proxy assisted partitioning ）
+客户端通过代理和redis服务器通信，而不是直接和服务器通信。
 查询路由（Query routing）
+客户端随机和redis节点通信，该redis节点可以把请求路由到正确的redis节点。
 Redis Cluster
 
 实现机制
@@ -15,12 +18,15 @@ Redis Cluster
 增加运维成本，不支持动态扩缩容，增加/减少redis节点只能重启系统
 代理分片Proxy assisted partitioning 
 优点
+codis支持动态扩缩容（Pre-sharding设计），Twemproxy不支持。
 缺点
 单节点性能被降低。根据 Redis作者的测试结果，在大多数情况下，Twemproxy的性能相当不错，同直接操作Redis相比，最多只有20%的性能损失。
 查询路由（Query routing）
 Redis Cluster
 优点
+支持动态扩缩容（Pre-sharding设计）
 缺点
+
 
 适应用场景
 客户端分片
@@ -28,11 +34,19 @@ Redis Cluster
 代理分片
 Redis Cluster
 
+集群的缺点
 
+不支持multiple keys操作，如mset，mget。
+不支持包含multiple keys的事务。
+集群需要备份每个实例，需要处理多个RDB/AOF文件。
 
 
 
 Presharding
+
+
+If Redis is used as a cache scaling up and down using consistent hashing is easy.
+If Redis is used as a store, a fixed keys-to-nodes map is used, so the number of nodes must be fixed and cannot vary. Otherwise, a system is needed that is able to rebalance keys between nodes when nodes are added or removed, and currently only Redis Cluster is able to do this - Redis Cluster is generally available and production-ready as of April 1st, 2015.
     
 长期以来，Redis本身仅支持单实例。Redis 3.0.0 RC1版本发布，首次支持Redis集群。
 在Redis集群方案还没有正式推出之前，通过代理的方式来实现存储集群可能是最好的选择，如Twitter推出的Twemproxy。
