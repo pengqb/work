@@ -1,2 +1,82 @@
-# 我的第一篇文章 #
-我的第一篇文章
+﻿#Redis常见集群技术#
+客户端分片（Client side partitioning）
+客户端直通过算法接选择目标节点通信。例如jedis客户端实现。
+代理分片（Proxy assisted partitioning ）
+客户端通过代理和redis服务器通信，而不是直接和服务器通信。Twemproxy和codis就是典型代表。
+查询路由（Query routing）
+客户端随机和redis节点通信，该redis节点可以把请求路由到正确的redis节点。Redis Cluster是查询路由和客户端分片的混合。
+
+#优缺点#
+客户端分片（Client side partitioning）
+优点
+没有单点；性能最高，即redis原生性能；支持redis的所有命令？（未必）
+缺点
+增加运维成本；不支持动态扩缩容；增加/减少redis节点只能重启系统，无法自动故障转移。可以在系统创建之初就创建32或64个节点以保留足够的增长空间，毕竟每个redis节点只占用1M的内存。
+代理分片(Proxy assisted partitioning） 
+优点
+可以自动故障转移；没有单点，包括代理服务器；开发成本低，业务切换成本低；运维成本低，Proxy的逻辑和存储的逻辑是隔离的。codis支持动态扩缩容（Pre-sharding设计），Twemproxy不支持。
+缺点
+单节点性能被降低。根据 Redis作者的测试结果，在大多数情况下，Twemproxy的性能相当不错，同直接操作Redis相比，最多有20%的性能损失，codis有40的性能损耗。
+查询路由（Query routing）
+Redis Cluster
+优点
+真正的无中心节点；支持动态扩缩容（Pre-sharding设计）；对于客户端来说请求的性能不会损失太多。
+缺点
+真正生产环境大规模应用的实例比较少；兼容的客户端工具比较少；状态很难确定，你很难清楚的知道集群现在处于什么状态；集群的升级运维困难因为他将分布式的逻辑和存储引擎绑定在一起。
+
+#适应用场景#
+客户端分片
+小型集群场景的应用，redis节点数在10个以下的。数据迁移是允许暂停业务服务器。
+代理分片
+系统可用性要求比较高，系统升级不可以停机业务。
+Redis Cluster
+生产环境使用的比较少。
+
+#扩缩容方法#
+静态扩缩容
+静态扩缩容需要重启redis客户端。采用redis replication可以较小的停机时间实现数据迁移。
+在新的服务器启动空的redis实例。
+配置新的实例作为老实例的从机。
+停止客户端。
+更新客户端配置指向新服务器的ip地址。
+停止新实例的主从模式。
+使用修改后的配置重启客户端。
+关闭老服务器上不再使用的实例。
+
+动态扩缩容
+动态扩缩容不需要重启redis客户端。
+解释这个问题之前，我想先介绍一下 Codis 的数据存储方式和关于数据迁移的一些前置知识：
+数据被根据key，分布在 1024 个 slot 中， slot 是一个虚拟的概念，数据存储在实际的多个 codis-server （codis 修改版的 redis-server） 中，每个 codis-server 负责一部分key-value数据， 哈希算法是 crc32(key) % 1024
+数据迁移是由 codis-config 发起的，在 codis-config 看来，数据迁移的最小单位是 slot
+对于 codis-server 来说，没有任何分布式逻辑在其中， 只是实现了几个关于数据传输的指令： slotsmgrtone, slotsmgrt…. 其主要的作用是：随机选取特定 slot 中的一个 key-value pair, 传输给另外一个 codis-server, 传输成功后，把本地的这个 key-value pair 删除， 注意， 这个整个操作是原子的。
+所以，这就决定了 Codis 并不太适合 key 少，但是 value 特别大的应用， 而且你的 key 越少， value 越大，最后就会退化成单个 redis 的模型 （性能还不如 raw redis），所以 Codis 更适合海量 Key, value比较小 （<= 1 MB) 的应用。
+为什么 codis-server 的数据迁移是一个个key的，而不是类似很多其他分布式系统，采用 replication 的方式？ 我认为，对于 redis 这种系统来说，实现 replication 不太经济， 首先，你需要 rdb dump 吧？ 在 redis 里面所有的操作严格来说都是串行的（单线程模型决定），所以dump数据是需要 fork 一个新进程的， 否则如果直接 SAVE 会阻塞唯一的主线程，同时还得考虑dump过程和传输过程中产生的新数据的同步的问题， 实现起来比较复杂。所以我们每次只原子的迁走一个 key，不会把主线程 block 住， redis 操作的是内存，批量的一次性写入和分多次set几乎没有区别（对于单机而言）， 而且这个模型还避免了迁移过程中的数据更新同步的问题，因为由于迁移一个 key 的操作是原子的， 对于这个 redis-server 来说， 在完成这次迁移指令之前，是不会响应其他请求的。 所以保证了数据的安全。
+一次典型的迁移流程：
+codis-config 发起迁移指令如 pre_migrate slot_1 to group 2
+codis-config 等待所有的 proxy 回复收到迁移指令, 如果某台 proxy 没有响应, 则标记其下线 (由于proxy启动时会在zk上注册一个临时节点, 如果这个proxy挂了, 正常来说, 这个临时节点也会删除, 在codis-config发现无响应后, codis-config会等待30s, 等待其下线, 如果还没下线或者仍然没有响应, 则codis-config 将不会释放锁, 通知管理员出问题了) 相当于一个2阶段提交
+codis-config 标记slot_1的状态为 migrate, 服务该slot的server group改为group2, 同时codis-config向group1的redis机器不断发送 SLOTSMGRT 命令, target参数是group2的机器, 直到group1中没有剩余的属于slot_1的key
+迁移过程中, 如果客户端请求 slot_1 的 key 数据, proxy 会将请求转发到group2上, proxy会先在group1上强行执行一次 MIGRATE key 将这个键值提前迁移过来. 然后再到group2上正常读取
+迁移完成, 标记slot_1状态为online
+
+关键点：
+所有的操作命令，都通过 Zookeeper 中转，所有的路由表，都放置在 ZooKeeper 中，确保任意一个 proxy 的视图都是一样的。
+codis-config 在实际修改slot状态之前，会确保所有的 proxy 收到这个迁移请求。
+在客户端读取正在迁移的slot内的数据之前， 会强制在源redis是执行一下迁移这个key的操作。
+这两点保证了，proxy 在读取数据的时候，总是能在迁移的目标机上命中这个 key。
+这就是 Codis 如何进行安全的数据迁移的过程。
+
+#集群的缺点#
+不支持multiple keys操作，如mset，mget。
+不支持包含multiple keys的事务。
+集群需要备份每个实例，需要处理多个RDB/AOF文件。
+
+#Presharding#
+Codis 采用 Pre-sharding 的技术来实现数据的分片, 默认分成 1024 个 slots (0-1023), 对于每个key来说, 通过以下公式确定所属的 Slot Id : SlotId = crc32(key) % 1024。每一个 slot 都会有一个且必须有一个特定的 server group id 来表示这个 slot 的数据由哪个 server group 来提供。数据的迁移也是以slot为单位的。Redis Cluster也才用Pre-sharding技术。
+
+
+#参考文献#
+Redis 3.0.0 RC1版本发布，首次支持Redis集群
+http://www.infoq.com/cn/news/2014/10/redis-3.0.0-rc1-release?utm_source=news_about_Redis&utm_medium=link&utm_campaign=Redis
+
+Partitioning:how to split data among multiple Redis instance
+redis.io/topics/partitioning
