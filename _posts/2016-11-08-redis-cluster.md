@@ -1,4 +1,8 @@
-﻿#Redis常见集群技术#
+---
+layout: default
+title: Redis集群
+---
+#Redis常见集群技术#
 客户端分片（Client side partitioning）
 客户端直通过算法接选择目标节点通信。例如jedis客户端实现。
 代理分片（Proxy assisted partitioning ）
