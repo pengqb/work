@@ -10,7 +10,7 @@ title: Redis集群
 查询路由（Query routing）
 客户端随机和redis节点通信，该redis节点可以把请求路由到正确的redis节点。Redis Cluster是查询路由和客户端分片的混合。
 
-#优缺点#
+# 优缺点 #
 客户端分片（Client side partitioning）
 优点
 没有单点；性能最高，即redis原生性能；支持redis的所有命令？（未必）
@@ -28,7 +28,7 @@ Redis Cluster
 缺点
 真正生产环境大规模应用的实例比较少；兼容的客户端工具比较少；状态很难确定，你很难清楚的知道集群现在处于什么状态；集群的升级运维困难因为他将分布式的逻辑和存储引擎绑定在一起。
 
-#适应用场景#
+# 适应用场景 #
 客户端分片
 小型集群场景的应用，redis节点数在10个以下的。数据迁移是允许暂停业务服务器。
 代理分片
@@ -36,7 +36,7 @@ Redis Cluster
 Redis Cluster
 生产环境使用的比较少。
 
-#扩缩容方法#
+# 扩缩容方法 #
 静态扩缩容
 静态扩缩容需要重启redis客户端。采用redis replication可以较小的停机时间实现数据迁移。
 在新的服务器启动空的redis实例。
@@ -69,16 +69,16 @@ codis-config 在实际修改slot状态之前，会确保所有的 proxy 收到�
 这两点保证了，proxy 在读取数据的时候，总是能在迁移的目标机上命中这个 key。
 这就是 Codis 如何进行安全的数据迁移的过程。
 
-#集群的缺点#
+# 集群的缺点 #
 不支持multiple keys操作，如mset，mget。
 不支持包含multiple keys的事务。
 集群需要备份每个实例，需要处理多个RDB/AOF文件。
 
-#Presharding#
+# Presharding #
 Codis 采用 Pre-sharding 的技术来实现数据的分片, 默认分成 1024 个 slots (0-1023), 对于每个key来说, 通过以下公式确定所属的 Slot Id : SlotId = crc32(key) % 1024。每一个 slot 都会有一个且必须有一个特定的 server group id 来表示这个 slot 的数据由哪个 server group 来提供。数据的迁移也是以slot为单位的。Redis Cluster也才用Pre-sharding技术。
 
 
-#参考文献#
+# 参考文献 #
 Redis 3.0.0 RC1版本发布，首次支持Redis集群
 http://www.infoq.com/cn/news/2014/10/redis-3.0.0-rc1-release?utm_source=news_about_Redis&utm_medium=link&utm_campaign=Redis
 
