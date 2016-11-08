@@ -12,11 +12,7 @@ title: Redis集群
 客户端随机和redis节点通信，该redis节点可以把请求路由到正确的redis节点。Redis Cluster是查询路由和客户端分片的混合。
 
 # 优缺点 #
-<<<<<<< HEAD
 - 客户端分片（Client side partitioning）
-=======
-客户端分片（Client side partitioning）
->>>>>>> 1e1c52f7d0d85619fcfeae6e0ef5b7d4a5db6394
 优点
 没有单点；性能最高，即redis原生性能；支持redis的所有命令？（未必）
 缺点
@@ -46,7 +42,6 @@ Redis Cluster
 生产环境使用的比较少。
 
 # 扩缩容方法 #
-<<<<<<< HEAD
 ## 静态扩缩容 ##
 - 静态扩缩容需要重启redis客户端。采用redis replication可以较小的停机时间实现数据迁移。
 - 在新的服务器启动空的redis实例。
@@ -56,17 +51,6 @@ Redis Cluster
 - 停止新实例的主从模式。
 - 使用修改后的配置重启客户端。
 - 关闭老服务器上不再使用的实例。
-=======
-静态扩缩容
-静态扩缩容需要重启redis客户端。采用redis replication可以较小的停机时间实现数据迁移。
-在新的服务器启动空的redis实例。
-配置新的实例作为老实例的从机。
-停止客户端。
-更新客户端配置指向新服务器的ip地址。
-停止新实例的主从模式。
-使用修改后的配置重启客户端。
-关闭老服务器上不再使用的实例。
->>>>>>> 1e1c52f7d0d85619fcfeae6e0ef5b7d4a5db6394
 
 ## 动态扩缩容 ##
 	动态扩缩容不需要重启redis客户端。
@@ -87,24 +71,13 @@ codis-config 等待所有的 proxy 回复收到迁移指令, 如果某台 proxy 
 在客户端读取正在迁移的slot内的数据之前， 会强制在源redis是执行一下迁移这个key的操作。
 这两点保证了，proxy 在读取数据的时候，总是能在迁移的目标机上命中这个 key。这就是 Codis 如何进行安全的数据迁移的过程。
 
-<<<<<<< HEAD
-#集群的缺点#
+# 集群的缺点 #
 - 不支持multiple keys操作，如mset，mget。
 - 不支持包含multiple keys的事务。
 - 集群需要备份每个实例，需要处理多个RDB/AOF文件。
 
-#Presharding#
-	Codis 采用 Pre-sharding 的技术来实现数据的分片, 默认分成 1024 个 slots (0-1023), 对于每个key来说, 通过以下公式确定所属的 Slot Id : SlotId = crc32(key) % 1024。每一个 slot 都会有一个且必须有一个特定的 server group id 来表示这个 slot 的数据由哪个 server group 来提供。数据的迁移也是以slot为单位的。Redis Cluster也才用Pre-sharding技术。
-=======
-# 集群的缺点 #
-不支持multiple keys操作，如mset，mget。
-不支持包含multiple keys的事务。
-集群需要备份每个实例，需要处理多个RDB/AOF文件。
-
 # Presharding #
-Codis 采用 Pre-sharding 的技术来实现数据的分片, 默认分成 1024 个 slots (0-1023), 对于每个key来说, 通过以下公式确定所属的 Slot Id : SlotId = crc32(key) % 1024。每一个 slot 都会有一个且必须有一个特定的 server group id 来表示这个 slot 的数据由哪个 server group 来提供。数据的迁移也是以slot为单位的。Redis Cluster也才用Pre-sharding技术。
->>>>>>> 1e1c52f7d0d85619fcfeae6e0ef5b7d4a5db6394
-
+	Codis 采用 Pre-sharding 的技术来实现数据的分片, 默认分成 1024 个 slots (0-1023), 对于每个key来说, 通过以下公式确定所属的 Slot Id : SlotId = crc32(key) % 1024。每一个 slot 都会有一个且必须有一个特定的 server group id 来表示这个 slot 的数据由哪个 server group 来提供。数据的迁移也是以slot为单位的。Redis Cluster也才用Pre-sharding技术。
 
 # 参考文献 #
 Redis 3.0.0 RC1版本发布，首次支持Redis集群
