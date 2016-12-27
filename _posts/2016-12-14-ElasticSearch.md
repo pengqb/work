@@ -4,7 +4,7 @@ https://www.elastic.co/downloads/elasticsearch
 
 # 二、elasticsearch-5.1.1.zip解压 #
 
-将当前目录下的elasticsearch-5.1.1.zip解压到本地磁盘某个目录下.如E:\green\elasticsearch-5.1.1。
+将当前目录下的elasticsearch-5.1.1.zip解压到本地磁盘某个目录下.如伪集群E:\green\elasticsearch-5.1.1。
 
 # 三、设置环境变量 #
 
