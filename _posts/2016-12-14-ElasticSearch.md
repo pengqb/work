@@ -65,14 +65,14 @@ Elasticsearch集群可以包含多个索引(indices)（数据库），每一个�
 默认情况下，文档中的所有字段都会被索引（拥有一个倒排索引），只有这样他们才是可被搜索的。
 
 
-# Java API #
+# 八、Java API #
 Elasticsearch为Java用户提供了两种内置客户端：
 ## 节点客户端(node client)： ##
 节点客户端以无数据节点(none data node)身份加入集群，换言之，它自己不存储任何数据，但是它知道数据在集群中的具体位置，并且能够直接转发请求到对应的节点上。
 ## 传输客户端(Transport client ##
 这个更轻量的传输客户端能够发送请求到远程集群。它自己不加入集群，只是简单转发请求给集群中的节点。
 
-# 数据交互格式 #
+# 九、数据交互格式 #
 基于HTTP协议，以JSON为数据交互格式的RESTful API
 向Elasticsearch发出的请求的组成部分与其它普通的HTTP请求是一样的：
 
@@ -98,9 +98,21 @@ Elasticsearch为Java用户提供了两种内置客户端：
     curl -i -XGET 'localhost:9200/'
 
 
+# 十、性能 #
+    http rest for 100 took:8398801411
+    sync  transport for 10000 took:8390398718
+    async transport for 10000 took:1561183912
+    bulk  transport for 10000 took:565804559
+    bulk  transport for 10000 took:475822746
+    
+    sync  transport for 100000 took:55923396897
+    async transport for 100000 took:10566496908
+    bulk  transport for 100000 took:1788979040
+    bulk  transport for 100000 took:1577938836
+
 # 命令集 #
 
-    curl -XGET 'localhost:9200/twitter/tweet/0?pretty'
+    curl -XGET http://localhost:9200/iot/gw/1?pretty
     
     curl -XGET http://localhost:9200/twitter/_mapping
     
